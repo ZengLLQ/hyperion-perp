@@ -39,7 +39,7 @@ contract HyperionClearingHouse is IHyperionClearingHouse {
 
     // Market registry: Market ID => MarketConfig
     mapping(uint256 => MarketConfig) public marketConfigs;
-    uint256 public marketCount;
+    uint256 public override marketCount;
 
     // Open Interest: Market ID => Long OI / Short OI (Wad)
     mapping(uint256 => uint256) public longOpenInterest;
@@ -220,11 +220,9 @@ contract HyperionClearingHouse is IHyperionClearingHouse {
         }
 
         // Verify margin requirements after opening position
-        if (!TransientStorage.isFlashActive()) {
-            int256 equity = IHyperionMargin(marginEngine).getAccountEquity(msg.sender);
-            uint256 totalIMR = IHyperionMargin(marginEngine).getTotalInitialMargin(msg.sender);
-            if (equity <= 0 || uint256(equity) < totalIMR) revert InsufficientFreeMargin();
-        }
+        int256 equity = IHyperionMargin(marginEngine).getAccountEquity(msg.sender);
+        uint256 totalIMR = IHyperionMargin(marginEngine).getTotalInitialMargin(msg.sender);
+        if (equity <= 0 || uint256(equity) < totalIMR) revert InsufficientFreeMargin();
 
         positionId = nextPositionId++;
         emit PositionOpened(msg.sender, marketId, side, baseAmount, quoteTransferred, executionPrice, takerFee);
@@ -300,6 +298,7 @@ contract HyperionClearingHouse is IHyperionClearingHouse {
     function reducePositionForLiquidation(address account, uint256 marketId, uint256 closedSize)
         external
         override
+        nonReentrant
         returns (uint256 remainingSize)
     {
         if (msg.sender != liquidator && msg.sender != owner) revert UnauthorizedCaller();

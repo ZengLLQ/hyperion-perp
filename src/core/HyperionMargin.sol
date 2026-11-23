@@ -201,7 +201,7 @@ contract HyperionMargin is IHyperionMargin {
         if (clearingHouse != address(0) && clearingHouse.code.length > 0) {
             // Check cross-margin positions
             // Sum uPnL across registered markets
-            uint256 marketCount = 5; // Support up to 5 default markets
+            uint256 marketCount = _getActiveMarketCount();
             for (uint256 m = 1; m <= marketCount; m++) {
                 try IHyperionClearingHouse(clearingHouse).getUnrealizedPnL(account, m) returns (int256 upnl) {
                     baseEquity += upnl;
@@ -215,7 +215,7 @@ contract HyperionMargin is IHyperionMargin {
     /// @inheritdoc IHyperionMargin
     function getTotalInitialMargin(address account) public view override returns (uint256 totalIMR) {
         if (clearingHouse == address(0) || clearingHouse.code.length == 0) return 0;
-        uint256 marketCount = 5;
+        uint256 marketCount = _getActiveMarketCount();
         for (uint256 m = 1; m <= marketCount; m++) {
             try IHyperionClearingHouse(clearingHouse).getPosition(account, m) returns (Position memory pos) {
                 if (pos.size > 0) {
@@ -229,7 +229,7 @@ contract HyperionMargin is IHyperionMargin {
     /// @inheritdoc IHyperionMargin
     function getTotalMaintenanceMargin(address account) public view override returns (uint256 totalMMR) {
         if (clearingHouse == address(0) || clearingHouse.code.length == 0) return 0;
-        uint256 marketCount = 5;
+        uint256 marketCount = _getActiveMarketCount();
         for (uint256 m = 1; m <= marketCount; m++) {
             try IHyperionClearingHouse(clearingHouse).getPosition(account, m) returns (Position memory pos) {
                 if (pos.size > 0) {
@@ -292,6 +292,14 @@ contract HyperionMargin is IHyperionMargin {
     // =========================================================================
     // INTERNAL VALUATION HELPERS
     // =========================================================================
+
+    function _getActiveMarketCount() internal view returns (uint256) {
+        try IHyperionClearingHouse(clearingHouse).marketCount() returns (uint256 registeredCount) {
+            return registeredCount > 0 ? registeredCount : 5;
+        } catch {
+            return 5;
+        }
+    }
 
     function _calculateTokenCredit(
         address,

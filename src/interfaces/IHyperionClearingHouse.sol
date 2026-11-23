@@ -113,4 +113,9 @@ interface IHyperionClearingHouse is IHyperionTypes {
      * @notice Returns total open interest in base units for both sides.
      */
     function getOpenInterest(uint256 marketId) external view returns (uint256 longOI, uint256 shortOI);
+
+    /**
+     * @notice Returns the highest registered market identifier count.
+     */
+    function marketCount() external view returns (uint256);
 }
